@@ -1,7 +1,7 @@
 # COORSA FSM Guide
 
 ## Sequenza di lancio
-### LANCIO IL NODO DEL MIR ###
+### Lancio del nodo del MiR:
 
 	Se ho il mir fisico:
 	- roslaunch mir_driver mir.launch
@@ -12,14 +12,14 @@
 	- roslaunch mir_navigation start_planner.launch map_file:=$(rospack find mir_gazebo)/maps/maze.yaml
 	- Avvio la simulazione su Gazebo
 
-### AVVIO LA COMUNICAZIONE SERIALE ###
+### Avvio la comunicazione seriale:
 
 	- controlla la porta dove si trova la nucleo con dmesg | grep tty
 	- rosrun rosserial_server serial_node port:=/dev/*porta* _baud:=57600
 
-### LANCIO IL MAIN ###
+### Lancio il Main:
 
-	- rosrun rfsmTest rfsmTest_node FSM2.lua (Qua cambia il file in base alla state machine da caricare,
+	- rosrun coorsa_rfsm coorsa_rfsm_node FSM2.lua (Qua cambia il file in base alla state machine da caricare,
 
 
 ## Comandi e segnali per il pantografo:
