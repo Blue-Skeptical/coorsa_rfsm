@@ -23,14 +23,14 @@
 
 
 ## Comandi e segnali per il pantografo:
-###Comandi:
+### Comandi:
   0   -> FERMA i motori del pantografo (ovunque siano)
   1   -> Posizione DOWN (Primo comando che si aspetta)
   2   -> Posizione MID
   4   -> Posizione UP
   64 -> Griffe aperte
   128  -> Griffe chiuse
-##Segnali:
+### Segnali:
   8   -> Raggiunta posizione DOWN
  16   -> Raggiunta posizione MID
  32   -> Raggiunta posizione UP
