@@ -22,7 +22,7 @@ bool eventArrived(coorsa_rfsm::fsm_event::Request &req , coorsa_rfsm::fsm_event:
 int main(int argc, char** argv) {
 
 	if(argc < 2){
-		ROS_ERROR(" *.lua needed as first argument. Could it be 'MyFsm.lua' ?");
+		ROS_ERROR(" *.lua needed as first argument. Could it be 'FSM2.lua' ?");
 		return 1;
 	}
 
@@ -70,17 +70,18 @@ int main(int argc, char** argv) {
 	ros::Subscriber NucleoSubscriber = n.subscribe("Pantograph_res",1000,NucleoCallback);
 
 
-	
+
 	//Inizializzo le callback con gli argomenti utilizzati
 	//La funzione initCallback salva, nelle istanze delle classi, i puntatori:
 	//	ActionServer ac:	Per permettere di inviare i goal del mir
 	//	StateMachine rfsm:	Per poter gestire internamente la macchina a stati (inviando autonomamente degli eventi)
+
 //	VersoDeposito.initCallback(&ac,&rfsm);
 	VersoPrelievo.initCallback(&ac,&rfsm);
-	MovePantografo.initCallback(&NucleoPublisher,&rfsm);
+	MovePantografoP.initCallback(&NucleoPublisher,&rfsm);
 	rfsm.setStateCallback("MIR.Verso_Deposito", VersoDeposito);
 	rfsm.setStateCallback("MIR.Verso_Prelievo", VersoPrelievo);
-	rfsm.setStateCallback("MIR.Move_Pantografo", MovePantografo);
+	rfsm.setStateCallback("MIR.Move_Pantografo_P", MovePantografoP);
 
 
 	//move_base_msgs::MoveBaseGoal prelievo;

@@ -106,8 +106,31 @@ private:
 } VersoPrelievo;
 
 
-class Move_Pantografo : public rfsm::StateCallback {
+class Move_Pantografo_P : public rfsm::StateCallback {
 public:
+  //Comandi:
+  //  0   -> FERMA i motori del pantografo (ovunque siano)
+  //  1   -> Posizione DOWN (Primo comando che si aspetta)
+  //  2   -> Posizione MID
+  //  4   -> Posizione UP
+  //  64 -> Griffe aperte
+  //  128  -> Griffe chiuse
+  //Segnali:
+  //  8   -> Raggiunta posizione DOWN
+  // 16   -> Raggiunta posizione MID
+  // 32   -> Raggiunta posizione UP
+  // 256  -> Griffe aperte arrivate
+  // 512  -> Griffe chiuse arrivate
+
+  //Per inviare un comando:
+  //    Mess.data = 0;
+  //    Mess.data |= (1u << X)        dove 'X' è la posizione del bit
+  //    NucleoPublisher->publish(Mess)
+  //
+  //Per leggere un segnale:
+  //    while(NucleoResult != X){     dove 'X' è il numero decimale del segnale
+  //      ros::spinOnce();
+  //    }
     	virtual void entry() {
           Mess.data = 0;
           Mess.data |= (1u << 0); //1 Posizione down
@@ -173,7 +196,7 @@ private:
   std_msgs::Int16 Mess;
 	ros::Publisher* NucleoPublisher;
 	rfsm::StateMachine* rfsm;
-} MovePantografo;
+} MovePantografoP;
 
 
 /////////////////////////////////////////////////////////
