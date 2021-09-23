@@ -19,6 +19,7 @@
 
 #include "callbacks.cpp"
 
-class Verso_Deposito;
-class Verso_Prelievo;
-class Move_Pantografo;
+//class Verso_Deposito;
+//class Verso_Prelievo;
+class Move_Pantografo_P;
+class Move_to_detect;

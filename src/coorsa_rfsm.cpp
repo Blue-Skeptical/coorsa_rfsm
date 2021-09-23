@@ -77,12 +77,13 @@ int main(int argc, char** argv) {
 	//	StateMachine rfsm:	Per poter gestire internamente la macchina a stati (inviando autonomamente degli eventi)
 
 //	VersoDeposito.initCallback(&ac,&rfsm);
-	VersoPrelievo.initCallback(&ac,&rfsm);
+//	VersoPrelievo.initCallback(&ac,&rfsm);
 	MovePantografoP.initCallback(&NucleoPublisher,&rfsm);
-	rfsm.setStateCallback("MIR.Verso_Deposito", VersoDeposito);
-	rfsm.setStateCallback("MIR.Verso_Prelievo", VersoPrelievo);
+	MoveToDetect.initCallback(&ac,&rfsm);
+	//rfsm.setStateCallback("MIR.Verso_Deposito", VersoDeposito);
+	//rfsm.setStateCallback("MIR.Verso_Prelievo", VersoPrelievo);
 	rfsm.setStateCallback("MIR.Move_Pantografo_P", MovePantografoP);
-
+	rfsm.setStateCallback("MIR.Prelievo.Move_to_detect",MoveToDetect);
 
 	//move_base_msgs::MoveBaseGoal prelievo;
 
