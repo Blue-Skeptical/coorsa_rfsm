@@ -16,7 +16,10 @@ bool eventArrived(coorsa_rfsm::fsm_event::Request &req , coorsa_rfsm::fsm_event:
 	arrived=true;
 	return true;
 }
-
+// CALLBACK che updata la posizione del MiR
+void UpdateMirPose(nav_msgs::Odometry odom){
+	MirPose = odom.pose.pose;
+}
 
 
 int main(int argc, char** argv) {
@@ -54,6 +57,7 @@ int main(int argc, char** argv) {
 	//______Inizializzo il nodo______
 	ros::init(argc, argv, "fsm_controller");
 	ros::NodeHandle n;
+	ros::Rate loop_rate(10);
 
 	//______ACTION CLIENT per inviare i goal al MiR______
 	MoveBaseClient ac("move_base", true);
@@ -68,6 +72,7 @@ int main(int argc, char** argv) {
 
 	ros::Publisher NucleoPublisher = n.advertise<std_msgs::Int16>("Pantograph_cmd",1000);
 	ros::Subscriber NucleoSubscriber = n.subscribe("Pantograph_res",1000,NucleoCallback);
+	ros::Subscriber MirOdomSubscriber = n.subscribe("odom_comb",1000,UpdateMirPose);
 
 
 
@@ -99,17 +104,12 @@ int main(int argc, char** argv) {
 	std::cout<<"E' partita la macchina a stati:\n";
 	while(ros::ok()){
 		if(arrived){
-//			pallets_manager::GetPallet srv;
-//			srv.request.number_pallet = 1;
-//			if(ros::service::call("/GetPallet",srv)){
-//				ROS_INFO("::: %f",(float)srv.response.pallet.corners[1].point.x);
-//			}
-
 			arrived=false;
 			rfsm.sendEvent(event);
 			rfsm.run();
 		}
    		ros::spinOnce();
+			loop_rate.sleep();
 	}
 
 

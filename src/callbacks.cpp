@@ -1,10 +1,8 @@
 #include "includes.h"
 
-
 //Variabili globali
 int NucleoResult;
 //-----------------
-
 
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 
@@ -114,13 +112,44 @@ class Move_to_detect : public rfsm::StateCallback{
     if(ros::service::call("/pallet_database/get_pallet_info",srv)){
       goal.target_pose.header.frame_id = "map";
       goal.target_pose.header.stamp = ros::Time::now();
+      goal.target_pose.pose = GetShiftedPose(srv.response.approaching_pose_1,-0.3);
+
+      ac->sendGoal(goal);
+
+      while(ac->getState()!= actionlib::SimpleClientGoalState::SUCCEEDED){
+        ros::spinOnce();
+      }
+
+      ROS_INFO("diff: %f\n", (acos(goal.target_pose.pose.orientation.w)*2 - acos(MirPose.orientation.w)*2));
+
       goal.target_pose.pose = srv.response.approaching_pose_1;
-    }
+      goal.target_pose.header.stamp = ros::Time::now();
 
-    ac->sendGoal(goal);
+      ac->sendGoal(goal);
 
-    while(ac->getState()!= actionlib::SimpleClientGoalState::SUCCEEDED){
-      ros::spinOnce();
+      while(ac->getState()!= actionlib::SimpleClientGoalState::SUCCEEDED){
+        ros::spinOnce();
+      }
+
+      ROS_INFO("diff: %f\n", (acos(goal.target_pose.pose.orientation.w)*2 - acos(MirPose.orientation.w)*2));
+      goal.target_pose.pose = GetShiftedPose(MirPose,0.2);
+      goal.target_pose.header.stamp = ros::Time::now();
+      ac->sendGoal(goal);
+
+      while(ac->getState()!= actionlib::SimpleClientGoalState::SUCCEEDED){
+        ros::spinOnce();
+      }
+      ROS_INFO("diff: %f\n", (acos(goal.target_pose.pose.orientation.w)*2 - acos(MirPose.orientation.w)*2));
+
+      goal.target_pose.pose = GetShiftedPose(MirPose,0.2);
+      goal.target_pose.header.stamp = ros::Time::now();
+      ac->sendGoal(goal);
+
+      while(ac->getState()!= actionlib::SimpleClientGoalState::SUCCEEDED){
+        ros::spinOnce();
+      }
+      ROS_INFO("diff: %f\n", (acos(goal.target_pose.pose.orientation.w)*2 - acos(MirPose.orientation.w)*2));
+
     }
 
     while(NucleoResult != 8){
@@ -193,6 +222,23 @@ private:
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////
+
+geometry_msgs::Pose GetShiftedPose(geometry_msgs::Pose MyPose, float shift){
+  geometry_msgs::Pose shiftedPose;
+  float x = MyPose.position.x;
+  float y = MyPose.position.y;
+  float w = MyPose.orientation.w;
+  float z = MyPose.orientation.z;
+  float alfa = acos(w)*2;
+
+  shiftedPose.position.x = x + (shift * cos(alfa));
+  shiftedPose.position.y = y + (shift * sin(alfa));
+  shiftedPose.orientation.w = w;
+  shiftedPose.orientation.z = z;
+
+  return shiftedPose;
+}
+
 
 /////////////////////////////////////////////////////////
 /////////////// SUBSCRIBER CALLBACK /////////////////////
