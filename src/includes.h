@@ -14,8 +14,8 @@
 #include "coorsa_rfsm/move_forward.h"
 #include <ros/package.h>
 #include <std_msgs/Int16.h>
-#include <pallets_manager/GetPallet.h>
-#include <pallets_manager/PALLET.h>
+//#include <pallets_manager/GetPallet.h>
+//#include <pallets_manager/PALLET.h>
 #include <pallet_database_pkg/pallet_info.h>
 
 
