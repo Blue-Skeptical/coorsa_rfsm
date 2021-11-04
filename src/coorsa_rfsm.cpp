@@ -74,8 +74,6 @@ int main(int argc, char** argv) {
 	ros::Subscriber NucleoSubscriber = n.subscribe("Pantograph_res",1000,NucleoCallback);
 	ros::Subscriber MirOdomSubscriber = n.subscribe("odom_comb",1000,UpdateMirPose);
 
-
-
 	//Inizializzo le callback con gli argomenti utilizzati
 	//La funzione initCallback salva, nelle istanze delle classi, i puntatori:
 	//	ActionServer ac:	Per permettere di inviare i goal del mir
@@ -90,15 +88,6 @@ int main(int argc, char** argv) {
 	rfsm.setStateCallback("MIR.Move_Pantografo_P", MovePantografoP);
 	rfsm.setStateCallback("MIR.Prelievo.Move_to_detect",MoveToDetect);
 
-	//move_base_msgs::MoveBaseGoal prelievo;
-
-	// SETTO LE POSIZIONI DI PRELIEVO
-	//prelievo.target_pose.header.frame_id = "map";
-	//prelievo.target_pose.header.stamp = ros::Time::now();
-	//prelievo.target_pose.pose.position.x = 10.0;
-	//prelievo.target_pose.pose.position.y = 10.0;
-	//prelievo.target_pose.pose.orientation.w = cos(-M_PI/2);
-	//prelievo.target_pose.pose.orientation.z = sin(-M_PI/2);
 
 
 	std::cout<<"E' partita la macchina a stati:\n";

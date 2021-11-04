@@ -4,8 +4,6 @@
 int NucleoResult;
 //-----------------
 
-typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
-
 /////////////////////////////////////////////////////////
 //////////////////// RFSM CALLBACK /////////////////////
 ///////////////////////////////////////////////////////
@@ -111,46 +109,29 @@ class Move_to_detect : public rfsm::StateCallback{
     srv.request.box_type = 3;
     if(ros::service::call("/pallet_database/get_pallet_info",srv)){
       goal.target_pose.header.frame_id = "map";
-      goal.target_pose.header.stamp = ros::Time::now();
+      //goal.target_pose.header.stamp = ros::Time::now();
       goal.target_pose.pose = GetShiftedPose(srv.response.approaching_pose_1,-0.3);
-
-      ac->sendGoal(goal);
-
-      while(ac->getState()!= actionlib::SimpleClientGoalState::SUCCEEDED){
-        ros::spinOnce();
-      }
-
-      ROS_INFO("diff: %f\n", (acos(goal.target_pose.pose.orientation.w)*2 - acos(MirPose.orientation.w)*2));
+      SendMirGoal(goal,0.05,0.05,1.0,false,ac);
 
       goal.target_pose.pose = srv.response.approaching_pose_1;
-      goal.target_pose.header.stamp = ros::Time::now();
+      SetMirVelocity(0.4);
+      SendMirGoal(goal,0.05,0.05,1.0,false,ac);
 
+      goal.target_pose.pose = GetShiftedPose(srv.response.approaching_pose_1,0.2);
+      SendMirGoal(goal,0.05,0.05,1.0,false,ac);
+
+
+/*
       ac->sendGoal(goal);
 
       while(ac->getState()!= actionlib::SimpleClientGoalState::SUCCEEDED){
         ros::spinOnce();
       }
-
-      ROS_INFO("diff: %f\n", (acos(goal.target_pose.pose.orientation.w)*2 - acos(MirPose.orientation.w)*2));
-      goal.target_pose.pose = GetShiftedPose(MirPose,0.2);
-      goal.target_pose.header.stamp = ros::Time::now();
-      ac->sendGoal(goal);
-
-      while(ac->getState()!= actionlib::SimpleClientGoalState::SUCCEEDED){
-        ros::spinOnce();
-      }
-      ROS_INFO("diff: %f\n", (acos(goal.target_pose.pose.orientation.w)*2 - acos(MirPose.orientation.w)*2));
-
-      goal.target_pose.pose = GetShiftedPose(MirPose,0.2);
-      goal.target_pose.header.stamp = ros::Time::now();
-      ac->sendGoal(goal);
-
-      while(ac->getState()!= actionlib::SimpleClientGoalState::SUCCEEDED){
-        ros::spinOnce();
-      }
-      ROS_INFO("diff: %f\n", (acos(goal.target_pose.pose.orientation.w)*2 - acos(MirPose.orientation.w)*2));
-
+      ROS_INFO("Position diff: %f\n", (goal.target_pose.pose.position.x-MirPose.position.x));
+      ROS_INFO("Angle diff: %f\n", (acos(goal.target_pose.pose.orientation.w)*2 - acos(MirPose.orientation.w)*2));
+*/
     }
+
 
     while(NucleoResult != 8){
           ros::spinOnce();
@@ -177,7 +158,7 @@ public:
   //  1   -> Posizione DOWN (Primo comando che si aspetta)
   //  2   -> Posizione MID
   //  4   -> Posizione UP
-  //  64 -> Griffe aperte
+  //  64  -> Griffe aperte
   //  128  -> Griffe chiuse
   //Segnali:
   //  8   -> Raggiunta posizione DOWN
@@ -237,6 +218,72 @@ geometry_msgs::Pose GetShiftedPose(geometry_msgs::Pose MyPose, float shift){
   shiftedPose.orientation.z = z;
 
   return shiftedPose;
+}
+
+void SendMirGoal(move_base_msgs::MoveBaseGoal goal,float x_Tollerance, float y_Tollerance,float a_Tollerance,bool slow, MoveBaseClient* ac){
+
+  move_base_msgs::MoveBaseGoal _goal = goal;
+  bool x=false;
+  bool y=false;
+  bool a=false;
+  float x_diff = 0.0;
+  float y_diff = 0.0;
+  float a_diff = 0.0;
+
+  if(slow){
+
+  }
+
+
+  ac->sendGoal(goal);
+
+  while(ac->getState()!= actionlib::SimpleClientGoalState::SUCCEEDED){
+      ros::spinOnce();
+  }
+  x_diff = std::abs(goal.target_pose.pose.position.x - MirPose.position.x);
+  if(x_diff>x_Tollerance){
+      ROS_WARN("Out of X tollerance: %f\t(tollerance: %f)\n",x_diff,x_Tollerance);
+      x=false;
+  }
+  else{
+    ROS_INFO("Good X: %f\n",x_diff);
+    x=true;
+  }
+
+  y_diff = std::abs(goal.target_pose.pose.position.y - MirPose.position.y);
+  if(y_diff>y_Tollerance){
+      ROS_WARN("Out of Y tollerance: %f\t(tollerance: %f)\n",y_diff,y_Tollerance);
+      y=false;
+  }
+  else{
+    ROS_INFO("Good Y: %f\n",y_diff);
+    y=true;
+  }
+
+  a_diff = std::abs(acos(goal.target_pose.pose.orientation.w)*2 - acos(MirPose.orientation.w)*2);
+  if(a_diff>a_Tollerance){
+      ROS_WARN("Out of angle tollerance: %f\t(tollerance: %f)\n",a_diff,a_Tollerance);
+      a=false;
+  }
+  else{
+    ROS_INFO("Good angle: %f\n",a_diff);
+    a=true;
+  }
+}
+
+void SetMirVelocity(float vel){
+  dynamic_reconfigure::ReconfigureRequest srv_req;
+  dynamic_reconfigure::ReconfigureResponse srv_resp;
+  dynamic_reconfigure::DoubleParameter double_param;
+  dynamic_reconfigure::Config conf;
+
+  double_param.name = "max_speed_xy";
+  double_param.value = 0.2;
+  conf.doubles.push_back(double_param);
+
+  srv_req.config = conf;
+
+  ros::service::call("/move_base_node/DWBLocalPlanner/set_parameters", srv_req, srv_resp);
 }
 
 
