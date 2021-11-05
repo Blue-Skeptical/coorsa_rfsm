@@ -3,9 +3,10 @@
 import rospy
 from geometry_msgs.msg import Twist
 from turtlesim.msg import Pose
-from math import pow, atan2, sqrt, acos, cos, sin
+from math import pow, atan2, sqrt, acos, cos, sin, pi
 from nav_msgs.msg import Odometry
 from coorsa_rfsm.srv import move_forward,move_forwardResponse
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 class MoveForwardServer:
 
@@ -42,7 +43,8 @@ class MoveForwardServer:
 
         min_pos = 9999.0
         vel_msg = Twist()
-
+        print("GOAL: ")
+        print(goal_pose)
         while self.euclidean_distance(goal_pose) >= distance_tolerance:
 
             # Porportional controller.
@@ -75,14 +77,14 @@ class MoveForwardServer:
         self.velocity_publisher.publish(vel_msg)
 
         # If we press control + C, the node will stop.
-        rospy.spin()
+        return
 
     def move_forward_handler(self,req):
         goal_pose = Pose()
         goal_pose = self.GetShiftedPose(req.distance)
         self.backward = (1,-1)[req.distance < 0]
         self.move2goal(goal_pose,req.tollerance)
-        return
+        return move_forwardResponse()
 
     def move_forward_start_server(self):
         # Creates a node with name 'turtlebot_controller' and make sure it is a
@@ -106,7 +108,8 @@ class MoveForwardServer:
         my_pose = Pose()
         my_pose.x = self.odom.pose.pose.position.x
         my_pose.y = self.odom.pose.pose.position.y
-        my_pose.theta = acos(self.odom.pose.pose.orientation.w)*2
+        orientation_list = [self.odom.pose.pose.orientation.x,self.odom.pose.pose.orientation.y,self.odom.pose.pose.orientation.z,self.odom.pose.pose.orientation.w]
+        (roll, pitch, my_pose.theta) = euler_from_quaternion(orientation_list)#acos(self.odom.pose.pose.orientation.w)*2
         shiftedPose = Pose()
         x = my_pose.x
         y = my_pose.y
@@ -114,7 +117,6 @@ class MoveForwardServer:
         shiftedPose.x = x + (shift * cos(my_pose.theta))
         shiftedPose.y = y + (shift * sin(my_pose.theta))
         shiftedPose.theta = my_pose.theta
-        print(shiftedPose.theta)
         return shiftedPose;
 
 
