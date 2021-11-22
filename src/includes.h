@@ -15,8 +15,7 @@
 #include "coorsa_rfsm/move_forward.h"
 #include <ros/package.h>
 #include <std_msgs/Int16.h>
-//#include <pallets_manager/GetPallet.h>
-//#include <pallets_manager/PALLET.h>
+#include <tf2/LinearMath/Quaternion.h>
 
 #include <dynamic_reconfigure/DoubleParameter.h>
 #include <dynamic_reconfigure/Reconfigure.h>
@@ -35,12 +34,17 @@ typedef actionlib::SimpleActionClient<coorsa_interface::PerformBoxDetectionActio
 geometry_msgs::Pose MirPose;
 geometry_msgs::Pose GetShiftedPose(geometry_msgs::Pose MyPose, float shift);
 geometry_msgs::Pose GetMirShiftedPose(float shift);
-void SendMirGoal(move_base_msgs::MoveBaseGoal goal,float x_Tollerance, float y_Tollerance,float deg_Tollerance,bool slow, MoveBaseClient* ac);
+
 void SetMirVelocity(float vel);
+void PerformPreciseApproach(geometry_msgs::Pose approaching_pose, MoveBaseClient* ac);
 void NucleoCallback(const std_msgs::Int16::ConstPtr& msg);
+void CheckMirPosition(geometry_msgs::Pose targetPose);
 //class Verso_Deposito;
 //class Verso_Prelievo;
 class Move_Pantografo_P;
-class Move_to_detect;
+class Move_To_Detection_Pose;
+class Request_Box;
+class Begin_Detection;
+class Move_To_Picking_Pose;
 
 #include "callbacks.cpp"
