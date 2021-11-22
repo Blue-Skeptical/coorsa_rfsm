@@ -3,6 +3,7 @@
 #define _USE_MATH_DEFINES
 
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
+typedef actionlib::SimpleActionClient<coorsa_interface::PerformBoxDetectionAction> BoxDetectionAction;
 
 //Variabili globali
 std::string event;
@@ -25,7 +26,7 @@ void UpdateMirPose(nav_msgs::Odometry odom){
 int main(int argc, char** argv) {
 
 	if(argc < 2){
-		ROS_ERROR(" *.lua needed as first argument. Could it be 'FSM2.lua' ?");
+		ROS_ERROR(" *.lua needed as first argument. Could it be 'FSM3.lua' ?");
 		return 1;
 	}
 
@@ -60,9 +61,13 @@ int main(int argc, char** argv) {
 	ros::Rate loop_rate(10);
 
 	//______ACTION CLIENT per inviare i goal al MiR______
-	MoveBaseClient ac("move_base", true);
-	while(!ac.waitForServer(ros::Duration(5.0))){
+	MoveBaseClient moveBaseClient("move_base", true); //ac
+	while(!moveBaseClient.waitForServer(ros::Duration(5.0))){
 		ROS_INFO("Waiting for the move_base action server to come up");
+	}
+	BoxDetectionAction boxDetectionAction("",true);
+	while(!boxDetectionAction.waitForServer(ros::Duration(5.0))){
+		ROS_INFO("Waiting for the camera action server to come up");
 	}
 
 	//SERVICE SERVER per far avanzare la macchina a stati.
@@ -82,11 +87,20 @@ int main(int argc, char** argv) {
 //	VersoDeposito.initCallback(&ac,&rfsm);
 //	VersoPrelievo.initCallback(&ac,&rfsm);
 	MovePantografoP.initCallback(&NucleoPublisher,&rfsm);
-	MoveToDetect.initCallback(&ac,&rfsm);
+	MoveToDetect.initCallback(&moveBaseClient,&rfsm);
+	Request_Box.initCallback(&rfsm);
+	Begin_Detection.initCallback(&boxDetectionAction,&rfsm);
 	//rfsm.setStateCallback("MIR.Verso_Deposito", VersoDeposito);
 	//rfsm.setStateCallback("MIR.Verso_Prelievo", VersoPrelievo);
-	rfsm.setStateCallback("MIR.Move_Pantografo_P", MovePantografoP);
-	rfsm.setStateCallback("MIR.Prelievo.Move_to_detect",MoveToDetect);
+
+	rfsm.setStateCallback("Request_Next_Pallet",Request_Next_Pallet);
+	rfsm.setStateCallback("Request_Box", Request_Box);
+	rfsm.setStateCallback("Detect_Box.Move_To_Detection_Pose", Move_To_Detection_Pose);
+	rfsm.setStateCallback("Detect_Box.Begin_Detection", Begin_Detection);
+	rfsm.setStateCallback("Detect_Box.Update_Database", Update_Database);
+
+//	rfsm.setStateCallback("MIR.Move_Pantografo_P", MovePantografoP);
+//	rfsm.setStateCallback("MIR.Prelievo.Move_to_detect",MoveToDetect);
 
 
 

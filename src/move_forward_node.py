@@ -98,7 +98,7 @@ class MoveForwardServer:
         # A subscriber to the topic '/turtle1/pose'. self.update_pose is called
         # when a message of type Pose is received.
         self.service = rospy.Service('/move_forward',move_forward,self.move_forward_handler)
-        self.odom_subscriber = rospy.Subscriber('/odom_comb',Odometry,self.update_pose)
+        self.odom_subscriber = rospy.Subscriber('/odom_enc',Odometry,self.update_pose) # /odom_comb
         self.pose = Pose()
         self.odom = Odometry()
         self.rate = rospy.Rate(10)

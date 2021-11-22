@@ -65,6 +65,7 @@ find_package(catkin REQUIRED COMPONENTS
    FILES
    fsm_event.srv
    move_forward.srv
+#   setpoint_update_service.srv
 #   Service2.srv
  )
 

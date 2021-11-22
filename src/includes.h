@@ -9,6 +9,7 @@
 #include <visualization_msgs/Marker.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Int16.h>
+#include <std_msgs/Float64MultiArray.h>
 #include <rfsm.h>
 #include "coorsa_rfsm/fsm_event.h"
 #include "coorsa_rfsm/move_forward.h"
@@ -21,10 +22,15 @@
 #include <dynamic_reconfigure/Reconfigure.h>
 #include <dynamic_reconfigure/Config.h>
 
-
+#include <coorsa_interface/PerformBoxDetectionAction.h>
+#include <coorsa_interface/PerformBoxDetectionActionGoal.h>
+#include <coorsa_interface/PerformBoxDetectionActionResult.h>
 #include <pallet_database_pkg/pallet_info.h>
+#include <pallet_database_pkg/box_recovery.h>
+#include <pallet_database_pkg/box_detected.h>
 
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
+typedef actionlib::SimpleActionClient<coorsa_interface::PerformBoxDetectionAction> BoxDetectionAction;
 
 geometry_msgs::Pose MirPose;
 geometry_msgs::Pose GetShiftedPose(geometry_msgs::Pose MyPose, float shift);

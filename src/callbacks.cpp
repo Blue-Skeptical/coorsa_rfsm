@@ -2,6 +2,13 @@
 
 //Variabili globali
 int NucleoResult;
+int BoxNumber;
+std::string PalletName;
+std::vector<geometry_msgs::Pose>  BoxPoses;
+std::vector<geometry_msgs::Pose>  BoxList;
+std_msgs::Float64MultiArray PlaneDetected;
+
+coorsa_interface::PerformBoxDetectionResultConstPtr BoxDetectionResult;
 //-----------------
 
 /////////////////////////////////////////////////////////
@@ -102,6 +109,7 @@ private:
 	rfsm::StateMachine* rfsm;
 } VersoPrelievo;
 */
+/*
 class Move_to_detect : public rfsm::StateCallback{
 
   virtual void entry(){
@@ -119,17 +127,6 @@ class Move_to_detect : public rfsm::StateCallback{
 
       goal.target_pose.pose = GetShiftedPose(srv.response.approaching_pose_1,0.2);
       SendMirGoal(goal,0.05,0.05,1.0,false,ac);
-
-
-/*
-      ac->sendGoal(goal);
-
-      while(ac->getState()!= actionlib::SimpleClientGoalState::SUCCEEDED){
-        ros::spinOnce();
-      }
-      ROS_INFO("Position diff: %f\n", (goal.target_pose.pose.position.x-MirPose.position.x));
-      ROS_INFO("Angle diff: %f\n", (acos(goal.target_pose.pose.orientation.w)*2 - acos(MirPose.orientation.w)*2));
-*/
     }
 
 
@@ -150,7 +147,7 @@ class Move_to_detect : public rfsm::StateCallback{
     rfsm::StateMachine* rfsm;
 
 } MoveToDetect;
-
+*/
 class Move_Pantografo_P : public rfsm::StateCallback {
 public:
   //Comandi:
@@ -198,6 +195,137 @@ private:
 	ros::Publisher* NucleoPublisher;
 	rfsm::StateMachine* rfsm;
 } MovePantografoP;
+
+
+
+class RequestNextPallet : public rfsm::StateCallback{
+
+  virtual void entry(){
+    //TODO
+    //Chiamo il servizio che mi fornisce il prossimo pallet su cui lavorare
+    BoxNumber = 2;
+    PalletName = "Pallet_1";
+
+
+
+    rfsm->sendEvent("Success_E");
+  }
+
+  public: void initCallback(rfsm::StateMachine* fsm){
+    rfsm = fsm;
+  }
+
+  private:
+    rfsm::StateMachine* rfsm;
+
+} Request_Next_Pallet;
+
+class RequestBox : public rfsm::StateCallback{
+
+  virtual void entry(){
+    //Chiamo il servizio di box recovery
+    pallet_database_pkg::box_recovery srv;
+    srv.request.box_number = BoxNumber;
+    //srv.request.pallet_name = PalletName;
+
+    if(ros::service::call("/pallet_database/get_box_for_recovery",srv))
+    {
+      //Se le scatole erano già state detectate
+      if(srv.response.box_available)
+      {
+        BoxList = srv.response.box_list;
+         rfsm->sendEvent("Success_E");
+      }
+      //Altrimenti le devo detectare
+      rfsm->sendEvent("Fail_E");
+    }
+  }
+
+  public: void initCallback(rfsm::StateMachine* fsm){
+    rfsm = fsm;
+  }
+
+  private:
+    rfsm::StateMachine* rfsm;
+
+} Request_Box;
+
+class MoveToDetectionPose : public rfsm::StateCallback{
+  virtual void entry(){
+    //Muovo la base alla posizione di detect
+    ////goal.target_pose.header.frame_id = "map";
+    //TODO
+    //Coordinate della posizione di detect
+    ////while(ac->getState()!= actionlib::SimpleClientGoalState::SUCCEEDED){
+		////	ros::spinOnce();
+		////}
+    //Chiamo l'action server dell'UR per iniziare la detect
+    rfsm->sendEvent("Success_E");
+  }
+
+  public: void initCallback(MoveBaseClient* act, rfsm::StateMachine* fsm){
+    ac = act;
+    rfsm = fsm;
+  }
+
+  private:
+    move_base_msgs::MoveBaseGoal goal;
+    MoveBaseClient* ac;
+    rfsm::StateMachine* rfsm;
+
+} Move_To_Detection_Pose;
+
+class BeginDetection : public rfsm::StateCallback{
+  virtual void entry(){
+    coorsa_interface::PerformBoxDetectionGoal goal;
+    bda->sendGoal(goal);
+
+    while(bda->getState()!= actionlib::SimpleClientGoalState::SUCCEEDED){
+        ros::spinOnce();
+    }
+
+    BoxDetectionResult = bda->getResult();
+    BoxPoses = BoxDetectionResult->box_poses;
+    PlaneDetected = BoxDetectionResult->plane_detected;
+    rfsm->sendEvent("Success_E");
+
+  }
+
+  public: void initCallback(BoxDetectionAction* _bda, rfsm::StateMachine* fsm){
+        bda = _bda;
+        rfsm = fsm;
+  }
+
+  private:
+    BoxDetectionAction* bda;
+    rfsm::StateMachine* rfsm;
+
+}Begin_Detection;
+
+class UpdateDatabase : public rfsm::StateCallback{
+  virtual void entry(){
+
+    pallet_database_pkg::box_detected srv;
+    srv.request.pallet_name = PalletName;
+    srv.request.box_detected = BoxList;
+    srv.request.plane_detected = PlaneDetected;
+    if(ros::service::call("pallet_database/save_box_detected",srv))
+    {
+        rfsm->sendEvent("Success_E");
+    }
+  }
+
+  public: void initCallback(rfsm::StateMachine* fsm){
+    rfsm = fsm;
+  }
+
+  private:
+    rfsm::StateMachine* rfsm;
+
+
+}Update_Database;
+
+
 
 
 /////////////////////////////////////////////////////////

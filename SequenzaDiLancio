@@ -14,6 +14,7 @@ AVVIO LA COMUNICAZIONE SERIALE
 	- controlla la porta dove si trova la nucleo con dmesg | grep tty
 	- rosrun rosserial_server serial_node port:=/dev/*porta* _baud:=57600
 
-LANCIO IL MAIN
+LANCIO IL DATABASE E IL MAIN
 	
+	-python2.7 /coorsa_pallet_database/scripts/database_main.py
 	-rosrun rfsmTest rfsmTest_node FSM2.lua (Qua cambia il file in base alla state machine da caricare, il più recente è FSM2.lua)
