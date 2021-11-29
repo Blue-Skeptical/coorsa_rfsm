@@ -330,8 +330,7 @@ class MoveToPickingPose : public rfsm::StateCallback{
     pallet_database_pkg::pallet_info srv;
     srv.request.box_type = 3;
     if(ros::service::call("/pallet_database/get_pallet_info",srv)){
-      ROS_INFO("%f",srv.response.approaching_pose_1.position.x);
-      PerformPreciseApproach(srv.response.approaching_pose_1,ac);
+      PerformPreciseApproach(srv.response.approaching_pose_2,ac);
 //      deposito.target_pose.header.frame_id = "map";
 //      deposito.target_pose.header.stamp = ros::Time::now();
 //      deposito.target_pose.pose = srv.response.pallet.approaching_poses[0];
@@ -369,6 +368,37 @@ geometry_msgs::Pose GetShiftedPose(geometry_msgs::Pose MyPose, float shift){
   return shiftedPose;
 }
 
+
+void MoveMir(float distance){
+  coorsa_rfsm::move_forward srv;
+  srv.request.distance = distance;
+
+  if(ros::service::call("/move_forward",srv)){
+    ros::spinOnce();
+  }
+}
+void RotatetMir(float rad){
+  coorsa_rfsm::move_forward srv;
+  srv.request.distance = rad;
+  if(ros::service::call("/rotate_forward",srv)){
+    ros::spinOnce();
+  }
+}
+void SetMirVelocity(float vel){
+  dynamic_reconfigure::ReconfigureRequest srv_req;
+  dynamic_reconfigure::ReconfigureResponse srv_resp;
+  dynamic_reconfigure::DoubleParameter double_param;
+  dynamic_reconfigure::Config conf;
+
+  double_param.name = "max_speed_xy";
+  double_param.value = 0.2;
+  conf.doubles.push_back(double_param);
+
+  srv_req.config = conf;
+
+  ros::service::call("/move_base_node/DWBLocalPlanner/set_parameters", srv_req, srv_resp);
+}
+
 void CheckMirPosition(geometry_msgs::Pose targetPose){
 
   bool x=false;
@@ -404,6 +434,7 @@ void CheckMirPosition(geometry_msgs::Pose targetPose){
   a_diff = std::abs(acos(targetPose.orientation.w)*2 - acos(MirPose.orientation.w)*2);
   if(a_diff>a_Tollerance){
       ROS_WARN("Out of angle tollerance: %f\t(tollerance: %f)\n",a_diff,a_Tollerance);
+      RotatetMir(cos(a_diff/2));
       a=false;
   }
   else{
@@ -412,33 +443,10 @@ void CheckMirPosition(geometry_msgs::Pose targetPose){
   }
 }
 
-void MoveMirForward(float distance, float tollerance){
-  coorsa_rfsm::move_forward srv;
-  srv.request.distance = distance;
-  srv.request.tollerance = tollerance;
-
-  if(ros::service::call("/move_forward",srv)){
-  }
-}
-
-void SetMirVelocity(float vel){
-  dynamic_reconfigure::ReconfigureRequest srv_req;
-  dynamic_reconfigure::ReconfigureResponse srv_resp;
-  dynamic_reconfigure::DoubleParameter double_param;
-  dynamic_reconfigure::Config conf;
-
-  double_param.name = "max_speed_xy";
-  double_param.value = 0.2;
-  conf.doubles.push_back(double_param);
-
-  srv_req.config = conf;
-
-  ros::service::call("/move_base_node/DWBLocalPlanner/set_parameters", srv_req, srv_resp);
-}
 
 void PerformPreciseApproach(geometry_msgs::Pose approaching_pose, MoveBaseClient* ac){
   //PORTA IL CENTRO SULLA RETTA PARALLELA AL LATO DEL Pallet
-  ////Ruoto di 90° in senso antiorario il punto di approccio
+  ////Ruoto di 90° in senso orario il punto di approccio
   geometry_msgs::Pose ap = GetShiftedPose(approaching_pose,-0.8);
   float theta = acos(ap.orientation.w)*2;
   theta += M_PI/2;
@@ -465,18 +473,17 @@ void PerformPreciseApproach(geometry_msgs::Pose approaching_pose, MoveBaseClient
 
   float distance = sqrt(pow(Xmir - Xt,2) + pow(Ymir - Yt,2));
   ROS_INFO("Remaining distance: %f", distance);
-  MoveMirForward(distance,0.01);
+  MoveMir(distance);
   //GIRATI DI 90° VERSO IL PALLET
   goal.target_pose.pose.position = MirPose.position;
   goal.target_pose.pose.orientation = approaching_pose.orientation;
-  ac->sendGoal(goal);
-  while(ac->getState()!= actionlib::SimpleClientGoalState::SUCCEEDED){
-    ros::spinOnce();
-  }
+  ROS_INFO("My angle: %f", acos(MirPose.orientation.w)*2);
+  RotatetMirs(acos(MirPose.orientation.w)*2 - Aapp);
+  CheckMirPosition(approaching_pose);
   ROS_INFO("Ruotato");
   //PROCEDI DRITTO FINO ALLA DISTANZA DESIDERATA
   distance = sqrt(pow(MirPose.position.x - approaching_pose.position.x,2) - pow(MirPose.position.y - approaching_pose.position.y,2) );
-  MoveMirForward(distance,0.01);
+  MoveMir(distance);
   CheckMirPosition(approaching_pose);
 }
 

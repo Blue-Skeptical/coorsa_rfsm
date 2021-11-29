@@ -3,7 +3,7 @@
 import rospy
 from geometry_msgs.msg import Twist
 from turtlesim.msg import Pose
-from math import pow, atan2, sqrt, acos, cos, sin, pi
+from math import pow, atan2, sqrt, acos, asin, cos, sin, pi, atan
 from nav_msgs.msg import Odometry
 from coorsa_rfsm.srv import move_forward,move_forwardResponse
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
@@ -17,6 +17,8 @@ class MoveForwardServer:
         self.pose.x = data.pose.pose.position.x
         self.pose.y = data.pose.pose.position.y
         self.pose.theta = acos(data.pose.pose.orientation.w)*2
+        orientation_list = [self.odom.pose.pose.orientation.x,self.odom.pose.pose.orientation.y,self.odom.pose.pose.orientation.z,self.odom.pose.pose.orientation.w]
+        (self.roll,self.pitch,self.yaw) = euler_from_quaternion(orientation_list)
         self.x = round(self.pose.x, 4)
         self.y = round(self.pose.y, 4)
 
@@ -33,11 +35,11 @@ class MoveForwardServer:
         """See video: https://www.youtube.com/watch?v=Qh15Nol5htM."""
         return atan2(goal_pose.y - self.pose.y, goal_pose.x - self.pose.x)
 
-    def angular_vel(self, goal_pose, constant=6):
+    def angular_vel(self, goal_pose, constant=6.0):
         """See video: https://www.youtube.com/watch?v=Qh15Nol5htM."""
         return constant * (self.steering_angle(goal_pose) - self.pose.theta)
 
-    def move2goal(self, goal_pose,distance_tolerance):
+    def move2goal(self, goal_pose):
         """Moves the turtle to the goal."""
         # Please, insert a number slightly greater than 0 (e.g. 0.01).
 
@@ -45,7 +47,7 @@ class MoveForwardServer:
         vel_msg = Twist()
         print("GOAL: ")
         print(goal_pose)
-        while self.euclidean_distance(goal_pose) >= distance_tolerance:
+        while True:
 
             # Porportional controller.
             # https://en.wikipedia.org/wiki/Proportional_control
@@ -55,8 +57,8 @@ class MoveForwardServer:
             vel_msg.linear.y = 0
             vel_msg.linear.z = 0
 
-            if(min_pos >= (self.euclidean_distance(goal_pose)-distance_tolerance)):
-                min_pos = self.euclidean_distance(goal_pose)-distance_tolerance
+            if(min_pos >= (self.euclidean_distance(goal_pose))):
+                min_pos = self.euclidean_distance(goal_pose)
             else:
                 break
 
@@ -79,52 +81,51 @@ class MoveForwardServer:
         # If we press control + C, the node will stop.
         return
 
-    def rotate2goal(self, goal_pose,distance_tolerance):
+    def rotate2goal(self, goal_pose):
         """Moves the turtle to the goal."""
         # Please, insert a number slightly greater than 0 (e.g. 0.01).
-
         vel_msg = Twist()
+        vel_msg.linear.x = 0
+        vel_msg.linear.y = 0
+        vel_msg.linear.z = 0
 
-        while abs(goal_pose.theta-self.pose.theta) >= distance_tolerance:
+        vel_msg.angular.x = 0
+        vel_msg.angular.y = 0
+        vel_msg.angular.z = 0.2 if (self.backward == 1) else -0.2 #rad/sec
 
-            # Porportional controller.
-            # https://en.wikipedia.org/wiki/Proportional_control
+        min_angle = 999999
 
-            # Linear velocity in the x-axis.
-            vel_msg.linear.x = 0#self.linear_vel(goal_pose)
-            vel_msg.linear.y = 0
-            vel_msg.linear.z = 0
+        while(True):
+            angle_left = abs(goal_pose.theta - self.yaw)
+            if(angle_left <= min_angle):
+                min_angle = angle_left
+            else:
+                break
 
-            # Angular velocity in the z-axis.
-            vel_msg.angular.x = 0
-            vel_msg.angular.y = 0
-            vel_msg.angular.z = self.angular_vel(goal_pose)
-
-            # Publishing our vel_msg
             self.velocity_publisher.publish(vel_msg)
-
-            # Publish at the desired rate.
             self.rate.sleep()
 
-        # Stopping our robot after the movement is over.
         vel_msg.linear.x = 0
         vel_msg.angular.z = 0
         self.velocity_publisher.publish(vel_msg)
-
-        # If we press control + C, the node will stop.
         return
 
     def move_forward_handler(self,req):
         goal_pose = Pose()
         goal_pose = self.GetShiftedPose(req.distance)
         self.backward = (1,-1)[req.distance < 0]
-        self.move2goal(goal_pose,req.tollerance)
+        self.move2goal(goal_pose)
         return move_forwardResponse()
 
     def rotate_forward_handler(self,req):
         goal_pose = Pose()
-        goal_pose.theta = self.pose.theta + req.distance
-        self.rotate2goal(goal_pose,req.tollerance)
+        goal_pose.theta = self.yaw + req.distance
+        print("CURRENT: ")
+        print(self.yaw)
+        print("GOAL: ")
+        print(goal_pose.theta)
+        self.backward = (1,-1)[req.distance < 0]
+        self.rotate2goal(goal_pose)
         return move_forwardResponse()
 
     def move_forward_start_server(self):
@@ -141,13 +142,14 @@ class MoveForwardServer:
             pass
         odom_topic = "/odom_enc" if (resp is 'y' or resp is 'Y') else "/odom_comb"
 
-        rospy.logwarn("!! Your odom topic is: " + odom_topic +"\nIf odometry is published on another topic\nthis will cause the robot to never stop!!\nDo you wish to continue?\n")
+        rospy.logwarn("!! Your odom topic is: " + odom_topic +"\nIf odometry is published on another topic\nthis will cause the robot to never stop!!")
         resp = ""
         while resp is not 'y' and resp is not 'Y' and resp is not 'n' and resp is not 'N':
             resp = raw_input("Do you wish to continue with " + odom_topic + " topic?(Yy-Nn)\n")
             if(resp is 'n' or resp is 'N'): return
             pass
 
+        print("---SERVICE ACTIVE---")
         # A subscriber to the topic '/turtle1/pose'. self.update_pose is called
         # when a message of type Pose is received.
         self.service = rospy.Service('/move_forward',move_forward,self.move_forward_handler)
@@ -155,7 +157,7 @@ class MoveForwardServer:
         self.odom_subscriber = rospy.Subscriber(odom_topic,Odometry,self.update_pose) # /odom_comb or /odom_enc
         self.pose = Pose()
         self.odom = Odometry()
-        self.rate = rospy.Rate(10)
+        self.rate = rospy.Rate(30)
         rospy.spin()
 
     def GetShiftedPose(self,shift):
