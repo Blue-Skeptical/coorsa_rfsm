@@ -475,10 +475,8 @@ void PerformPreciseApproach(geometry_msgs::Pose approaching_pose, MoveBaseClient
   ROS_INFO("Remaining distance: %f", distance);
   MoveMir(distance);
   //GIRATI DI 90° VERSO IL PALLET
-  goal.target_pose.pose.position = MirPose.position;
-  goal.target_pose.pose.orientation = approaching_pose.orientation;
   ROS_INFO("My angle: %f", acos(MirPose.orientation.w)*2);
-  RotatetMirs(acos(MirPose.orientation.w)*2 - Aapp);
+  RotatetMir(acos(MirPose.orientation.w)*2 - Aapp);
   CheckMirPosition(approaching_pose);
   ROS_INFO("Ruotato");
   //PROCEDI DRITTO FINO ALLA DISTANZA DESIDERATA
