@@ -19,8 +19,24 @@ class MoveForwardServer:
         self.pose.theta = acos(data.pose.pose.orientation.w)*2
         orientation_list = [self.odom.pose.pose.orientation.x,self.odom.pose.pose.orientation.y,self.odom.pose.pose.orientation.z,self.odom.pose.pose.orientation.w]
         (self.roll,self.pitch,self.yaw) = euler_from_quaternion(orientation_list)
+
+        self.yaw = self.yaw % (2*pi)
+
+        if(self.yaw < 0):
+            self.yaw = pi + abs(self.yaw)
+
+        self.yawNormalize = self.yaw
         self.x = round(self.pose.x, 4)
         self.y = round(self.pose.y, 4)
+
+    def normalize_rad(self, angle):
+        _angle = angle
+        _angle = _angle % (2*pi)
+
+        if(_angle < 0):
+            _angle = pi + abs(_angle)
+
+        return _angle
 
     def euclidean_distance(self, goal_pose):
         """Euclidean distance between current pose and the goal."""
@@ -97,7 +113,9 @@ class MoveForwardServer:
 
         while(True):
             angle_left = abs(goal_pose.theta - self.yaw)
-            if(angle_left <= min_angle):
+            #print("Goal - yaw", goal_pose.theta, self.yaw)
+            #print("=: ", angle_left)
+            if(angle_left <= min_angle + 0.001):
                 min_angle = angle_left
             else:
                 break
@@ -119,9 +137,11 @@ class MoveForwardServer:
 
     def rotate_forward_handler(self,req):
         goal_pose = Pose()
-        goal_pose.theta = self.yaw + req.distance
+        goal_pose.theta = self.normalize_rad(self.yaw) + req.distance
+        goal_pose.theta = self.normalize_rad(goal_pose.theta)
         print("CURRENT: ")
         print(self.yaw)
+        print(self.normalize_rad(self.yaw))
         print("GOAL: ")
         print(goal_pose.theta)
         self.backward = (1,-1)[req.distance < 0]
