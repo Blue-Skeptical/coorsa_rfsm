@@ -10,6 +10,13 @@ from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 class MoveForwardServer:
 
+    def sameSign(self,num1,num2):
+        if (num1 > 0 and num2 < 0):
+            return False;
+        if (num1 < 0 and num2 > 0):
+            return False;
+        return True;
+
     def update_pose(self, data):
         """Callback function which is called when a new message of type Pose is
         received by the subscriber."""
@@ -61,8 +68,6 @@ class MoveForwardServer:
 
         min_pos = 9999.0
         vel_msg = Twist()
-        print("GOAL: ")
-        print(goal_pose)
         while True:
 
             # Porportional controller.
@@ -109,16 +114,33 @@ class MoveForwardServer:
         vel_msg.angular.y = 0
         vel_msg.angular.z = 0.2 if (self.backward == 1) else -0.2 #rad/sec
 
-        min_angle = 999999
-
+        distance_done = 0
+        last_yaw = self.yawNormalize
         while(True):
-            angle_left = abs(goal_pose.theta - self.yaw)
-            #print("Goal - yaw", goal_pose.theta, self.yaw)
-            #print("=: ", angle_left)
-            if(angle_left <= min_angle + 0.001):
-                min_angle = angle_left
+            yaw_diff = (self.yawNormalize - last_yaw)
+            if(self.backward == 1):
+                if(yaw_diff < 0):
+                    delta_distance = 0
+                else:
+                    delta_distance = (2*pi + yaw_diff)%(2*pi)
             else:
+                if(yaw_diff > 0):
+                    delta_distance = 0
+                else:
+                    delta_distance = (-2*pi + yaw_diff)%(-2*pi)
+
+#            print("YAW Difference: ", self.yawNormalize - last_yaw)
+            last_yaw = self.yawNormalize
+            distance_done += delta_distance
+#            print("DELTA: ",delta_distance)
+#            print("Distance: ",distance_done)
+#            print("TARGET: ", goal_pose.theta)
+            if((self.backward == 1 and distance_done > goal_pose.theta) or (self.backward == -1 and distance_done < goal_pose.theta)):
                 break
+#            if(abs(angle_left) <= min_angle + 0.001):
+#                min_angle = abs(angle_left)
+#            else:
+#                break
 
             self.velocity_publisher.publish(vel_msg)
             self.rate.sleep()
@@ -137,13 +159,8 @@ class MoveForwardServer:
 
     def rotate_forward_handler(self,req):
         goal_pose = Pose()
-        goal_pose.theta = self.normalize_rad(self.yaw) + req.distance
-        goal_pose.theta = self.normalize_rad(goal_pose.theta)
-        print("CURRENT: ")
-        print(self.yaw)
-        print(self.normalize_rad(self.yaw))
-        print("GOAL: ")
-        print(goal_pose.theta)
+        goal_pose.theta = req.distance # + self.normalize_rad(self.yaw)
+#        goal_pose.theta = self.normalize_rad(goal_pose.theta)
         self.backward = (1,-1)[req.distance < 0]
         self.rotate2goal(goal_pose)
         return move_forwardResponse()

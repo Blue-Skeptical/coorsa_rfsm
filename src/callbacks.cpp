@@ -472,17 +472,18 @@ void PerformPreciseApproach(geometry_msgs::Pose approaching_pose, MoveBaseClient
   float Yt = (Xt - Xapp) * tan(Aapp) + Yapp;
 
   float distance = sqrt(pow(Xmir - Xt,2) + pow(Ymir - Yt,2));
-  ROS_INFO("Remaining distance: %f", distance);
+  ros::spinOnce();
   MoveMir(distance);
   //GIRATI DI 90° VERSO IL PALLET
-  ROS_INFO("My angle: %f", acos(MirPose.orientation.w)*2);
-  RotatetMir(acos(MirPose.orientation.w)*2 - Aapp);
-  CheckMirPosition(approaching_pose);
-  ROS_INFO("Ruotato");
+  ros::spinOnce();
+  ROS_INFO("\nApp: %f \nMe: %f",Aapp,acos(MirPose.orientation.w)*2);
+  RotatetMir(Aapp - fmod(acos(MirPose.orientation.w)*2,2*M_PI));
+//  CheckMirPosition(approaching_pose);
+  ROS_INFO("RUOTATO");
   //PROCEDI DRITTO FINO ALLA DISTANZA DESIDERATA
-  distance = sqrt(pow(MirPose.position.x - approaching_pose.position.x,2) - pow(MirPose.position.y - approaching_pose.position.y,2) );
-  MoveMir(distance);
-  CheckMirPosition(approaching_pose);
+  //distance = sqrt(pow(MirPose.position.x - approaching_pose.position.x,2) - pow(MirPose.position.y - approaching_pose.position.y,2) );
+  //MoveMir(distance);
+//  CheckMirPosition(approaching_pose);
 }
 
 /////////////////////////////////////////////////////////
