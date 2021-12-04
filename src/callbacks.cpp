@@ -377,7 +377,7 @@ void MoveMir(float distance){
     ros::spinOnce();
   }
 }
-void RotatetMir(float rad){
+void RotateMir(float rad){
   coorsa_rfsm::move_forward srv;
   srv.request.distance = rad;
   if(ros::service::call("/rotate_forward",srv)){
@@ -434,7 +434,7 @@ void CheckMirPosition(geometry_msgs::Pose targetPose){
   a_diff = std::abs(acos(targetPose.orientation.w)*2 - acos(MirPose.orientation.w)*2);
   if(a_diff>a_Tollerance){
       ROS_WARN("Out of angle tollerance: %f\t(tollerance: %f)\n",a_diff,a_Tollerance);
-      RotatetMir(cos(a_diff/2));
+      RotateMir(cos(a_diff/2));
       a=false;
   }
   else{
@@ -476,10 +476,41 @@ void PerformPreciseApproach(geometry_msgs::Pose approaching_pose, MoveBaseClient
   MoveMir(distance);
   //GIRATI DI 90° VERSO IL PALLET
   ros::spinOnce();
-  ROS_INFO("\nApp: %f \nMe: %f",Aapp,acos(MirPose.orientation.w)*2);
-  RotatetMir(Aapp - fmod(acos(MirPose.orientation.w)*2,2*M_PI));
+  ros::Rate loop_rate(10);
+  loop_rate.sleep();
+  ros::spinOnce();
+  loop_rate.sleep();
+  ros::spinOnce();
+  loop_rate.sleep();
+  ros::spinOnce();
+  loop_rate.sleep();
+  ros::spinOnce();
+  loop_rate.sleep();
+  tf2::Quaternion mir_quat(0,0,MirPose.orientation.z,MirPose.orientation.w);
+  float mir_angle = tf2::getYaw(MirPose.orientation);
+  if(mir_angle < 0) mir_angle = 2*M_PI + mir_angle;
+
+  ROS_INFO("\nApp: %f \nMe: %f",Aapp,mir_angle);
+  RotateMir(Aapp - mir_angle);
 //  CheckMirPosition(approaching_pose);
   ROS_INFO("RUOTATO");
+  ros::spinOnce();
+  loop_rate.sleep();
+  ros::spinOnce();
+  loop_rate.sleep();
+  ros::spinOnce();
+  loop_rate.sleep();
+  ros::spinOnce();
+  loop_rate.sleep();
+  ros::spinOnce();
+  loop_rate.sleep();
+  mir_quat = tf2::Quaternion(0,0,MirPose.orientation.z,MirPose.orientation.w);
+  mir_angle = tf2::getYaw(MirPose.orientation);
+  if(mir_angle < 0) mir_angle = 2*M_PI + mir_angle;
+  ROS_INFO("\n%f - %f = %f",Aapp,mir_angle, Aapp - mir_angle);
+  RotateMir(Aapp - mir_angle);
+
+
   //PROCEDI DRITTO FINO ALLA DISTANZA DESIDERATA
   //distance = sqrt(pow(MirPose.position.x - approaching_pose.position.x,2) - pow(MirPose.position.y - approaching_pose.position.y,2) );
   //MoveMir(distance);

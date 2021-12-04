@@ -16,6 +16,9 @@
 #include <ros/package.h>
 #include <std_msgs/Int16.h>
 #include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/utils.h>
+#include <tf/transform_datatypes.h>
 
 #include <dynamic_reconfigure/DoubleParameter.h>
 #include <dynamic_reconfigure/Reconfigure.h>
