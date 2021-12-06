@@ -18,7 +18,8 @@ bool eventArrived(coorsa_rfsm::fsm_event::Request &req , coorsa_rfsm::fsm_event:
 	return true;
 }
 // CALLBACK che updata la posizione del MiR
-void UpdateMirPose(nav_msgs::Odometry odom){
+void UpdateMirPose(geometry_msgs::PoseWithCovarianceStamped odom){
+	//MirPose = odom.pose.pose;
 	MirPose = odom.pose.pose;
 }
 
@@ -77,7 +78,7 @@ int main(int argc, char** argv) {
 
 	ros::Publisher NucleoPublisher = n.advertise<std_msgs::Int16>("Pantograph_cmd",1000);
 	ros::Subscriber NucleoSubscriber = n.subscribe("Pantograph_res",1000,NucleoCallback);
-	ros::Subscriber MirOdomSubscriber = n.subscribe("odom_comb",1000,UpdateMirPose);
+	ros::Subscriber MirOdomSubscriber = n.subscribe("amcl_pose",1000,UpdateMirPose); //odom_comb
 
 	//Inizializzo le callback con gli argomenti utilizzati
 	//La funzione initCallback salva, nelle istanze delle classi, i puntatori:

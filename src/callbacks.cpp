@@ -330,7 +330,7 @@ class MoveToPickingPose : public rfsm::StateCallback{
     pallet_database_pkg::pallet_info srv;
     srv.request.box_type = 3;
     if(ros::service::call("/pallet_database/get_pallet_info",srv)){
-      PerformPreciseApproach(srv.response.approaching_pose_2,ac);
+      PerformPreciseApproach(srv.response.approaching_pose_1,ac);
 //      deposito.target_pose.header.frame_id = "map";
 //      deposito.target_pose.header.stamp = ros::Time::now();
 //      deposito.target_pose.pose = srv.response.pallet.approaching_poses[0];
@@ -506,9 +506,10 @@ void PerformPreciseApproach(geometry_msgs::Pose approaching_pose, MoveBaseClient
   loop_rate.sleep();
   mir_quat = tf2::Quaternion(0,0,MirPose.orientation.z,MirPose.orientation.w);
   mir_angle = tf2::getYaw(MirPose.orientation);
-  if(mir_angle < 0) mir_angle = 2*M_PI + mir_angle;
+//  if(mir_angle < 0) mir_angle = 2*M_PI + mir_angle;
   ROS_INFO("\n%f - %f = %f",Aapp,mir_angle, Aapp - mir_angle);
   RotateMir(Aapp - mir_angle);
+//  else ROS_INFO("STO FERMO");
 
 
   //PROCEDI DRITTO FINO ALLA DISTANZA DESIDERATA

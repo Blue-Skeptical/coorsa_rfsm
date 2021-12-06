@@ -105,6 +105,7 @@ class MoveForwardServer:
     def rotate2goal(self, goal_pose):
         """Moves the turtle to the goal."""
         # Please, insert a number slightly greater than 0 (e.g. 0.01).
+        velocity = max(goal_pose.theta/10,0.02) if (self.backward == 1) else min(goal_pose.theta/10,-0.02)
         vel_msg = Twist()
         vel_msg.linear.x = 0
         vel_msg.linear.y = 0
@@ -113,6 +114,8 @@ class MoveForwardServer:
         vel_msg.angular.x = 0
         vel_msg.angular.y = 0
         vel_msg.angular.z = 0.2 if (self.backward == 1) else -0.2 #rad/sec
+        if(abs(goal_pose.theta) < abs(vel_msg.angular.z)):
+            vel_msg.angular.z = goal_pose.theta
 
         distance_done = 0
         last_yaw = self.yawNormalize
@@ -191,7 +194,7 @@ class MoveForwardServer:
         # when a message of type Pose is received.
         self.service = rospy.Service('/move_forward',move_forward,self.move_forward_handler)
         self.service = rospy.Service('/rotate_forward',move_forward,self.rotate_forward_handler)
-        self.odom_subscriber = rospy.Subscriber(odom_topic,Odometry,self.update_pose) # /odom_comb or /odom_enc
+        self.odom_subscriber = rospy.Subscriber("odometry/filtered",Odometry,self.update_pose) # /odom_comb or /odom_enc
         self.pose = Pose()
         self.odom = Odometry()
         self.rate = rospy.Rate(30)
