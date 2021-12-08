@@ -38,6 +38,7 @@ geometry_msgs::Pose MirPose;
 geometry_msgs::Pose GetShiftedPose(geometry_msgs::Pose MyPose, float shift);
 geometry_msgs::Pose GetMirShiftedPose(float shift);
 
+float ShortenTheAngleDistance(float angle);
 void MoveMir(float distance);
 void RotateMir(float rad);
 void SetMirVelocity(float vel);

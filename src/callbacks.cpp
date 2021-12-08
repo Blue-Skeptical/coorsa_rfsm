@@ -328,9 +328,10 @@ class UpdateDatabase : public rfsm::StateCallback{
 class MoveToPickingPose : public rfsm::StateCallback{
   virtual void entry(){
     pallet_database_pkg::pallet_info srv;
-    srv.request.box_type = 3;
+    srv.request.box_type = 4;
     if(ros::service::call("/pallet_database/get_pallet_info",srv)){
       PerformPreciseApproach(srv.response.approaching_pose_1,ac);
+      PerformPreciseApproach(srv.response.approaching_pose_2,ac);
 //      deposito.target_pose.header.frame_id = "map";
 //      deposito.target_pose.header.stamp = ros::Time::now();
 //      deposito.target_pose.pose = srv.response.pallet.approaching_poses[0];
@@ -368,6 +369,21 @@ geometry_msgs::Pose GetShiftedPose(geometry_msgs::Pose MyPose, float shift){
   return shiftedPose;
 }
 
+float ShortenTheAngleDistance(float angle){
+  if(angle < -M_PI){
+    if(angle < (-2*M_PI))
+      return std::fmod(angle,-2*M_PI);
+    else
+      return 2*M_PI + angle;
+  }
+  else if(angle > M_PI){
+    if(angle > (2*M_PI))
+      return std::fmod(angle,2*M_PI);
+    else
+      return 2*M_PI - angle;
+  }
+  return angle;
+}
 
 void MoveMir(float distance){
   coorsa_rfsm::move_forward srv;
@@ -473,6 +489,7 @@ void PerformPreciseApproach(geometry_msgs::Pose approaching_pose, MoveBaseClient
 
   float distance = sqrt(pow(Xmir - Xt,2) + pow(Ymir - Yt,2));
   ros::spinOnce();
+  ROS_INFO("Missing Distance: %f m",distance);
   MoveMir(distance);
   //GIRATI DI 90° VERSO IL PALLET
   ros::spinOnce();
@@ -492,8 +509,7 @@ void PerformPreciseApproach(geometry_msgs::Pose approaching_pose, MoveBaseClient
 
   ROS_INFO("\nApp: %f \nMe: %f",Aapp,mir_angle);
   RotateMir(Aapp - mir_angle);
-//  CheckMirPosition(approaching_pose);
-  ROS_INFO("RUOTATO");
+
   ros::spinOnce();
   loop_rate.sleep();
   ros::spinOnce();
@@ -506,10 +522,12 @@ void PerformPreciseApproach(geometry_msgs::Pose approaching_pose, MoveBaseClient
   loop_rate.sleep();
   mir_quat = tf2::Quaternion(0,0,MirPose.orientation.z,MirPose.orientation.w);
   mir_angle = tf2::getYaw(MirPose.orientation);
-//  if(mir_angle < 0) mir_angle = 2*M_PI + mir_angle;
+  if(mir_angle < 0) mir_angle = 2*M_PI + mir_angle;
   ROS_INFO("\n%f - %f = %f",Aapp,mir_angle, Aapp - mir_angle);
-  RotateMir(Aapp - mir_angle);
+  ROS_INFO("\nNEW distance: %f\n", ShortenTheAngleDistance(Aapp - mir_angle));
+  RotateMir(ShortenTheAngleDistance(Aapp - mir_angle));
 //  else ROS_INFO("STO FERMO");
+  MoveMir(2.5);
 
 
   //PROCEDI DRITTO FINO ALLA DISTANZA DESIDERATA
