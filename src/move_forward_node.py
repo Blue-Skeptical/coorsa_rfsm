@@ -2,6 +2,7 @@
 #!/usr/bin/env python
 import rospy
 from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Pose as GeomPose
 from turtlesim.msg import Pose
 from math import pow, atan2, sqrt, acos, asin, cos, sin, pi, atan
 from nav_msgs.msg import Odometry
@@ -25,6 +26,25 @@ class MoveForwardServer:
         self.pose.y = data.pose.pose.position.y
         self.pose.theta = acos(data.pose.pose.orientation.w)*2
         orientation_list = [self.odom.pose.pose.orientation.x,self.odom.pose.pose.orientation.y,self.odom.pose.pose.orientation.z,self.odom.pose.pose.orientation.w]
+        (self.roll,self.pitch,self.yaw) = euler_from_quaternion(orientation_list)
+
+        self.yaw = self.yaw % (2*pi)
+
+        if(self.yaw < 0):
+            self.yaw = pi + abs(self.yaw)
+
+        self.yawNormalize = self.yaw
+        self.x = round(self.pose.x, 4)
+        self.y = round(self.pose.y, 4)
+
+    def update_geom_pose(self, data):
+        """Callback function which is called when a new message of type Pose is
+        received by the subscriber."""
+        self.odom = data
+        self.pose.x = data.position.x
+        self.pose.y = data.position.y
+        self.pose.theta = acos(data.orientation.w)*2
+        orientation_list = [self.odom.orientation.x,self.odom.orientation.y,self.odom.orientation.z,self.odom.orientation.w]
         (self.roll,self.pitch,self.yaw) = euler_from_quaternion(orientation_list)
 
         self.yaw = self.yaw % (2*pi)
@@ -194,7 +214,8 @@ class MoveForwardServer:
         # when a message of type Pose is received.
         self.service = rospy.Service('/move_forward',move_forward,self.move_forward_handler)
         self.service = rospy.Service('/rotate_forward',move_forward,self.rotate_forward_handler)
-        self.odom_subscriber = rospy.Subscriber("odometry/filtered",Odometry,self.update_pose) # /odom_comb or /odom_enc
+        #self.odom_subscriber = rospy.Subscriber("/robot_pose",Odometry,self.update_pose) # /odom_comb or /odom_enc
+        self.odom_subscriber = rospy.Subscriber("/robot_pose",GeomPose,self.update_geom_pose)
         self.pose = Pose()
         self.odom = Odometry()
         self.rate = rospy.Rate(30)
