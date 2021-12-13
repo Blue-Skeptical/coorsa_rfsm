@@ -18,7 +18,8 @@ bool eventArrived(coorsa_rfsm::fsm_event::Request &req , coorsa_rfsm::fsm_event:
 	return true;
 }
 // CALLBACK che updata la posizione del MiR
-void UpdateMirPose(nav_msgs::Odometry odom){
+void UpdateMirPose(geometry_msgs::PoseWithCovarianceStamped odom){
+	//MirPose = odom.pose.pose;
 	MirPose = odom.pose.pose;
 }
 
@@ -66,9 +67,9 @@ int main(int argc, char** argv) {
 		ROS_INFO("Waiting for the move_base action server to come up");
 	}
 	BoxDetectionAction boxDetectionAction("",true);
-	while(!boxDetectionAction.waitForServer(ros::Duration(5.0))){
-		ROS_INFO("Waiting for the camera action server to come up");
-	}
+//	while(!boxDetectionAction.waitForServer(ros::Duration(5.0))){
+//		ROS_INFO("Waiting for the camera action server to come up");
+//	}
 
 	//SERVICE SERVER per far avanzare la macchina a stati.
 	//I dispositivi dovranno effettuare delle call a questo ServiceServer per far avanzare la macchina a stati
@@ -77,31 +78,25 @@ int main(int argc, char** argv) {
 
 	ros::Publisher NucleoPublisher = n.advertise<std_msgs::Int16>("Pantograph_cmd",1000);
 	ros::Subscriber NucleoSubscriber = n.subscribe("Pantograph_res",1000,NucleoCallback);
-	ros::Subscriber MirOdomSubscriber = n.subscribe("odom_comb",1000,UpdateMirPose);
+	ros::Subscriber MirOdomSubscriber = n.subscribe("amcl_pose",1000,UpdateMirPose); //odom_comb
 
 	//Inizializzo le callback con gli argomenti utilizzati
 	//La funzione initCallback salva, nelle istanze delle classi, i puntatori:
 	//	ActionServer ac:	Per permettere di inviare i goal del mir
 	//	StateMachine rfsm:	Per poter gestire internamente la macchina a stati (inviando autonomamente degli eventi)
 
-//	VersoDeposito.initCallback(&ac,&rfsm);
-//	VersoPrelievo.initCallback(&ac,&rfsm);
 	MovePantografoP.initCallback(&NucleoPublisher,&rfsm);
-	MoveToDetect.initCallback(&moveBaseClient,&rfsm);
+	Move_To_Detection_Pose.initCallback(&moveBaseClient,&rfsm);
 	Request_Box.initCallback(&rfsm);
 	Begin_Detection.initCallback(&boxDetectionAction,&rfsm);
-	//rfsm.setStateCallback("MIR.Verso_Deposito", VersoDeposito);
-	//rfsm.setStateCallback("MIR.Verso_Prelievo", VersoPrelievo);
+	Move_To_Picking_Pose.initCallback(&moveBaseClient,&rfsm);
 
 	rfsm.setStateCallback("Request_Next_Pallet",Request_Next_Pallet);
 	rfsm.setStateCallback("Request_Box", Request_Box);
 	rfsm.setStateCallback("Detect_Box.Move_To_Detection_Pose", Move_To_Detection_Pose);
 	rfsm.setStateCallback("Detect_Box.Begin_Detection", Begin_Detection);
 	rfsm.setStateCallback("Detect_Box.Update_Database", Update_Database);
-
-//	rfsm.setStateCallback("MIR.Move_Pantografo_P", MovePantografoP);
-//	rfsm.setStateCallback("MIR.Prelievo.Move_to_detect",MoveToDetect);
-
+	rfsm.setStateCallback("Move_To_Picking_Pose",Move_To_Picking_Pose);
 
 
 	std::cout<<"E' partita la macchina a stati:\n";
