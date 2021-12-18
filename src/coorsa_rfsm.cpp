@@ -8,7 +8,7 @@ typedef actionlib::SimpleActionClient<coorsa_interface::PerformBoxDetectionActio
 //Variabili globali
 std::string event;
 bool arrived=false;
-
+ros::Publisher GoalMarkerPublisher;
 
 // SERVICE CALLBACK, inserisce l'evento ricevuto nella variabile globale event
 bool eventArrived(coorsa_rfsm::fsm_event::Request &req , coorsa_rfsm::fsm_event::Response &rep ){
@@ -19,10 +19,49 @@ bool eventArrived(coorsa_rfsm::fsm_event::Request &req , coorsa_rfsm::fsm_event:
 }
 // CALLBACK che updata la posizione del MiR
 void UpdateMirPose(geometry_msgs::PoseWithCovarianceStamped odom){
-	//MirPose = odom.pose.pose;
 	MirPose = odom.pose.pose;
 }
+/*
+void UpdateMirPose(nav_msgs::Odometry odom){
+	MirPose = odom.pose.pose;
+}*/
 
+//Initialize Marker
+void InitGoalMarker(){
+GoalMarker.header.frame_id = "map";
+GoalMarker.header.stamp = ros::Time();
+GoalMarker.id = 0;
+GoalMarker.type = visualization_msgs::Marker::CUBE;
+GoalMarker.action = visualization_msgs::Marker::ADD;
+GoalMarker.pose.position.x = 1;
+GoalMarker.pose.position.y = 1;
+GoalMarker.pose.position.z = 1;
+GoalMarker.pose.orientation.x = 0.0;
+GoalMarker.pose.orientation.y = 0.0;
+GoalMarker.pose.orientation.z = 0.0;
+GoalMarker.pose.orientation.w = 1.0;
+GoalMarker.scale.x = 20;
+GoalMarker.scale.y = 0.02;
+GoalMarker.scale.z = 0.02;
+GoalMarker.color.a = 1.0; // Don't forget to set the alpha!
+GoalMarker.color.r = 0.0;
+GoalMarker.color.g = 1.0;
+GoalMarker.color.b = 0.0;
+//only if using a MESH_RESOURCE marker type:
+}
+
+void UpdateGoalMarker(geometry_msgs::Pose newGoal){
+	GoalMarker.pose = newGoal;
+	GoalMarkerPublisher.publish(GoalMarker);
+}
+
+void UpdateGoalMarker(float X, float Y, float theta){
+	GoalMarker.pose.position.x = X;
+	GoalMarker.pose.position.y = Y;
+	GoalMarker.pose.orientation.w = cos(theta/2);
+	GoalMarker.pose.orientation.z = sin(theta/2);
+	GoalMarkerPublisher.publish(GoalMarker);
+}
 
 int main(int argc, char** argv) {
 
@@ -76,9 +115,15 @@ int main(int argc, char** argv) {
 	//inserendo come request la stringa contenente il nome dell'evento (es:"begin_p_E" per iniziare il prelievo)
 	ros::ServiceServer service = n.advertiseService("fsm_event", eventArrived);
 
+	GoalMarkerPublisher = n.advertise<visualization_msgs::Marker>("GoalMarkerPublisher",1000);
 	ros::Publisher NucleoPublisher = n.advertise<std_msgs::Int16>("Pantograph_cmd",1000);
 	ros::Subscriber NucleoSubscriber = n.subscribe("Pantograph_res",1000,NucleoCallback);
-	ros::Subscriber MirOdomSubscriber = n.subscribe("amcl_pose",1000,UpdateMirPose); //odom_comb
+	ros::Subscriber MirOdomSubscriber = n.subscribe("amcl_pose",1000,UpdateMirPose); //amcl_pose
+	ROS_WARN("MIR POSITION TAKEN FROM /amcl_pose !!!!");
+	ROS_WARN("MIR POSITION TAKEN FROM /amcl_pose !!!!");
+	ROS_WARN("MIR POSITION TAKEN FROM /amcl_pose !!!!");
+
+	InitGoalMarker();
 
 	//Inizializzo le callback con gli argomenti utilizzati
 	//La funzione initCallback salva, nelle istanze delle classi, i puntatori:
@@ -106,6 +151,7 @@ int main(int argc, char** argv) {
 			rfsm.sendEvent(event);
 			rfsm.run();
 		}
+			GoalMarkerPublisher.publish(GoalMarker);
    		ros::spinOnce();
 			loop_rate.sleep();
 	}

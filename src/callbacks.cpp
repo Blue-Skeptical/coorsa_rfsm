@@ -463,7 +463,9 @@ void CheckMirPosition(geometry_msgs::Pose targetPose){
 void PerformPreciseApproach(geometry_msgs::Pose approaching_pose, MoveBaseClient* ac){
   //PORTA IL CENTRO SULLA RETTA PARALLELA AL LATO DEL Pallet
   ////Ruoto di 90° in senso orario il punto di approccio
+
   geometry_msgs::Pose ap = GetShiftedPose(approaching_pose,-0.8);
+  UpdateGoalMarker(approaching_pose);
   float theta = acos(ap.orientation.w)*2;
   theta += M_PI/2;
   move_base_msgs::MoveBaseGoal goal;
@@ -475,6 +477,20 @@ void PerformPreciseApproach(geometry_msgs::Pose approaching_pose, MoveBaseClient
   while(ac->getState()!= actionlib::SimpleClientGoalState::SUCCEEDED){
     ros::spinOnce();
   }
+  ros::spinOnce();
+  ros::Rate loop_rate(10);
+  ros::spinOnce();
+  loop_rate.sleep();
+  ros::spinOnce();
+  loop_rate.sleep();
+  ros::spinOnce();
+  loop_rate.sleep();
+  ros::spinOnce();
+  loop_rate.sleep();
+  ros::spinOnce();
+  loop_rate.sleep();
+
+
   //CORREGGO LA POSIZIONE per mettere il centro del mir sulla retta PARALLELA
   // al lato del pallet
   float Xmir = MirPose.position.x;
@@ -486,15 +502,18 @@ void PerformPreciseApproach(geometry_msgs::Pose approaching_pose, MoveBaseClient
 
   float Xt = (Ymir - Yapp + Xapp * tan(Aapp) - Xmir * tan(Amir))/(tan(Aapp)-tan(Amir));
   float Yt = (Xt - Xapp) * tan(Aapp) + Yapp;
+  ROS_INFO("\nXa: %f\nYa: %f\nAa: %f\n",Xapp,Yapp,Aapp);
+  ROS_INFO("\nXmir: %f\nYmir: %f\nAmir: %f\n",Xmir,Ymir,Amir);
+  ROS_INFO("\nXt: %f\nYt: %f\nAt: %f\n",Xt,Yt,Aapp);
+  UpdateGoalMarker(Xapp,Yapp,Aapp);
 
   float distance = sqrt(pow(Xmir - Xt,2) + pow(Ymir - Yt,2));
   ros::spinOnce();
   ROS_INFO("Missing Distance: %f m",distance);
+
   MoveMir(distance);
   //GIRATI DI 90° VERSO IL PALLET
   ros::spinOnce();
-  ros::Rate loop_rate(10);
-  loop_rate.sleep();
   ros::spinOnce();
   loop_rate.sleep();
   ros::spinOnce();

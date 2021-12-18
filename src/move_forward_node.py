@@ -146,6 +146,7 @@ class MoveForwardServer:
         """Moves the turtle to the goal."""
         # Please, insert a number slightly greater than 0 (e.g. 0.01).
         velocity = max(distance/10,0.01) if (self.backward == 1) else min(distance/10,-0.01)
+        #velocity = 0.02 if(self.backward == 1) else -0.02
         vel_msg = Twist()
         vel_msg.linear.x = velocity
         vel_msg.linear.y = 0
@@ -258,7 +259,7 @@ class MoveForwardServer:
         while resp is not 'y' and resp is not 'Y' and resp is not 'n' and resp is not 'N':
             resp = raw_input("Do you have a real robot? (Yy-Nn)")
             pass
-        odom_topic = "/odom_enc" if (resp is 'y' or resp is 'Y') else "/odom_comb"
+        odom_topic = "/odom" if (resp is 'y' or resp is 'Y') else "/odom_comb"
 
         rospy.logwarn("!! Your odom topic is: " + odom_topic +"\nIf odometry is published on another topic\nthis will cause the robot to never stop!!")
         resp = ""

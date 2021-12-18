@@ -34,6 +34,10 @@
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 typedef actionlib::SimpleActionClient<coorsa_interface::PerformBoxDetectionAction> BoxDetectionAction;
 
+void UpdateGoalMarker(geometry_msgs::Pose newGoal);
+void UpdateGoalMarker(float X, float Y, float theta);
+
+visualization_msgs::Marker GoalMarker;
 geometry_msgs::Pose MirPose;
 geometry_msgs::Pose GetShiftedPose(geometry_msgs::Pose MyPose, float shift);
 geometry_msgs::Pose GetMirShiftedPose(float shift);
