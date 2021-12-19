@@ -34,10 +34,12 @@
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 typedef actionlib::SimpleActionClient<coorsa_interface::PerformBoxDetectionAction> BoxDetectionAction;
 
-void UpdateGoalMarker(geometry_msgs::Pose newGoal);
-void UpdateGoalMarker(float X, float Y, float theta);
+void UpdateMarker(std::string Marker, geometry_msgs::Pose newGoal);
+void UpdateMarker(std::string Marker, float X, float Y, float theta);
 
 visualization_msgs::Marker GoalMarker;
+visualization_msgs::Marker MirMarker;
+visualization_msgs::Marker InterMarker;
 geometry_msgs::Pose MirPose;
 geometry_msgs::Pose GetShiftedPose(geometry_msgs::Pose MyPose, float shift);
 geometry_msgs::Pose GetMirShiftedPose(float shift);

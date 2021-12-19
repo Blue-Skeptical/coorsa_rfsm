@@ -145,7 +145,7 @@ class MoveForwardServer:
     def move2goalConstSpeed(self, distance):
         """Moves the turtle to the goal."""
         # Please, insert a number slightly greater than 0 (e.g. 0.01).
-        velocity = max(distance/10,0.01) if (self.backward == 1) else min(distance/10,-0.01)
+        velocity = max(distance/10,0.03) if (self.backward == 1) else min(distance/10,-0.03)
         #velocity = 0.02 if(self.backward == 1) else -0.02
         vel_msg = Twist()
         vel_msg.linear.x = velocity

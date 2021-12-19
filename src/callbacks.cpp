@@ -331,7 +331,11 @@ class MoveToPickingPose : public rfsm::StateCallback{
     srv.request.box_type = 3;
     if(ros::service::call("/pallet_database/get_pallet_info",srv)){
       PerformPreciseApproach(srv.response.approaching_pose_1,ac);
-//      PerformPreciseApproach(srv.response.approaching_pose_2,ac);
+      PerformPreciseApproach(srv.response.approaching_pose_2,ac);
+      PerformPreciseApproach(srv.response.approaching_pose_1,ac);
+      PerformPreciseApproach(srv.response.approaching_pose_2,ac);
+      PerformPreciseApproach(srv.response.approaching_pose_1,ac);
+      PerformPreciseApproach(srv.response.approaching_pose_2,ac);
 //      deposito.target_pose.header.frame_id = "map";
 //      deposito.target_pose.header.stamp = ros::Time::now();
 //      deposito.target_pose.pose = srv.response.pallet.approaching_poses[0];
@@ -465,7 +469,7 @@ void PerformPreciseApproach(geometry_msgs::Pose approaching_pose, MoveBaseClient
   ////Ruoto di 90° in senso orario il punto di approccio
 
   geometry_msgs::Pose ap = GetShiftedPose(approaching_pose,-0.8);
-  UpdateGoalMarker(approaching_pose);
+  UpdateMarker("GOAL",approaching_pose);
   float theta = acos(ap.orientation.w)*2;
   theta += M_PI/2;
   move_base_msgs::MoveBaseGoal goal;
@@ -497,21 +501,26 @@ void PerformPreciseApproach(geometry_msgs::Pose approaching_pose, MoveBaseClient
   float Ymir = MirPose.position.y;
   float Xapp = approaching_pose.position.x;
   float Yapp = approaching_pose.position.y;
-  float Amir = acos(MirPose.orientation.w)*2;
+//  float Amir = acos(MirPose.orientation.w)*2;
+  float Amir = tf2::getYaw(MirPose.orientation);
   float Aapp = acos(approaching_pose.orientation.w)*2;
+
+  if(Amir < 0) Amir = 2*M_PI + Amir;
 
   float Xt = (Ymir - Yapp + Xapp * tan(Aapp) - Xmir * tan(Amir))/(tan(Aapp)-tan(Amir));
   float Yt = (Xt - Xapp) * tan(Aapp) + Yapp;
   ROS_INFO("\nXa: %f\nYa: %f\nAa: %f\n",Xapp,Yapp,Aapp);
   ROS_INFO("\nXmir: %f\nYmir: %f\nAmir: %f\n",Xmir,Ymir,Amir);
   ROS_INFO("\nXt: %f\nYt: %f\nAt: %f\n",Xt,Yt,Aapp);
-  UpdateGoalMarker(Xapp,Yapp,Aapp);
+  UpdateMarker("MIR",Xmir,Ymir,Amir);
+  UpdateMarker("INTER",Xt,Yt,Aapp);
+  UpdateMarker("GOAL",Xapp,Yapp,Aapp);
 
   float distance = sqrt(pow(Xmir - Xt,2) + pow(Ymir - Yt,2));
   ros::spinOnce();
   ROS_INFO("Missing Distance: %f m",distance);
 
-  MoveMir(distance);
+  MoveMir(distance+0.02);
   //GIRATI DI 90° VERSO IL PALLET
   ros::spinOnce();
   ros::spinOnce();

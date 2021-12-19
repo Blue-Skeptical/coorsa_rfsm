@@ -9,6 +9,8 @@ typedef actionlib::SimpleActionClient<coorsa_interface::PerformBoxDetectionActio
 std::string event;
 bool arrived=false;
 ros::Publisher GoalMarkerPublisher;
+ros::Publisher MirMarkerPublisher;
+ros::Publisher InterMarkerPublisher;
 
 // SERVICE CALLBACK, inserisce l'evento ricevuto nella variabile globale event
 bool eventArrived(coorsa_rfsm::fsm_event::Request &req , coorsa_rfsm::fsm_event::Response &rep ){
@@ -50,17 +52,94 @@ GoalMarker.color.b = 0.0;
 //only if using a MESH_RESOURCE marker type:
 }
 
-void UpdateGoalMarker(geometry_msgs::Pose newGoal){
-	GoalMarker.pose = newGoal;
-	GoalMarkerPublisher.publish(GoalMarker);
+void InitMirMarker(){
+MirMarker.header.frame_id = "map";
+MirMarker.header.stamp = ros::Time();
+MirMarker.id = 0;
+MirMarker.type = visualization_msgs::Marker::CUBE;
+MirMarker.action = visualization_msgs::Marker::ADD;
+MirMarker.pose.position.x = 1;
+MirMarker.pose.position.y = 1;
+MirMarker.pose.position.z = 1;
+MirMarker.pose.orientation.x = 0.0;
+MirMarker.pose.orientation.y = 0.0;
+MirMarker.pose.orientation.z = 0.0;
+MirMarker.pose.orientation.w = 1.0;
+MirMarker.scale.x = 20;
+MirMarker.scale.y = 0.02;
+MirMarker.scale.z = 0.02;
+MirMarker.color.a = 1.0; // Don't forget to set the alpha!
+MirMarker.color.r = 1.0;
+MirMarker.color.g = 0.0;
+MirMarker.color.b = 0.0;
+//only if using a MESH_RESOURCE marker type:
 }
 
-void UpdateGoalMarker(float X, float Y, float theta){
-	GoalMarker.pose.position.x = X;
-	GoalMarker.pose.position.y = Y;
-	GoalMarker.pose.orientation.w = cos(theta/2);
-	GoalMarker.pose.orientation.z = sin(theta/2);
+void InitInterMarker(){
+InterMarker.header.frame_id = "map";
+InterMarker.header.stamp = ros::Time();
+InterMarker.id = 0;
+InterMarker.type = visualization_msgs::Marker::SPHERE;
+InterMarker.action = visualization_msgs::Marker::ADD;
+InterMarker.pose.position.x = 1;
+InterMarker.pose.position.y = 1;
+InterMarker.pose.position.z = 1;
+InterMarker.pose.orientation.x = 0.0;
+InterMarker.pose.orientation.y = 0.0;
+InterMarker.pose.orientation.z = 0.0;
+InterMarker.pose.orientation.w = 1.0;
+InterMarker.scale.x = 0.03;
+InterMarker.scale.y = 0.03;
+InterMarker.scale.z = 0.03;
+InterMarker.color.a = 1.0; // Don't forget to set the alpha!
+InterMarker.color.r = 0.0;
+InterMarker.color.g = 0.0;
+InterMarker.color.b = 1.0;
+//only if using a MESH_RESOURCE marker type:
+}
+
+void UpdateMarker(std::string Marker, geometry_msgs::Pose newGoal){
+	if(Marker == "GOAL")
+	{
+		GoalMarker.pose = newGoal;
+	}
+	if(Marker == "MIR"){
+		MirMarker.pose = newGoal;
+
+	}
+	if(Marker == "INTER"){
+		InterMarker.pose = newGoal;
+	}
+
 	GoalMarkerPublisher.publish(GoalMarker);
+	MirMarkerPublisher.publish(MirMarker);
+	InterMarkerPublisher.publish(InterMarker);
+
+}
+
+void UpdateMarker(std::string Marker, float X, float Y, float theta){
+	if(Marker == "GOAL"){
+		GoalMarker.pose.position.x = X;
+		GoalMarker.pose.position.y = Y;
+		GoalMarker.pose.orientation.w = cos(theta/2);
+		GoalMarker.pose.orientation.z = sin(theta/2);
+	}
+	if(Marker == "MIR"){
+		MirMarker.pose.position.x = X;
+		MirMarker.pose.position.y = Y;
+		MirMarker.pose.orientation.w = cos(theta/2);
+		MirMarker.pose.orientation.z = sin(theta/2);
+	}
+	if(Marker == "INTER"){
+		InterMarker.pose.position.x = X;
+		InterMarker.pose.position.y = Y;
+		InterMarker.pose.orientation.w = cos(theta/2);
+		InterMarker.pose.orientation.z = sin(theta/2);
+	}
+
+	GoalMarkerPublisher.publish(GoalMarker);
+	MirMarkerPublisher.publish(MirMarker);
+	InterMarkerPublisher.publish(InterMarker);
 }
 
 int main(int argc, char** argv) {
@@ -116,6 +195,9 @@ int main(int argc, char** argv) {
 	ros::ServiceServer service = n.advertiseService("fsm_event", eventArrived);
 
 	GoalMarkerPublisher = n.advertise<visualization_msgs::Marker>("GoalMarkerPublisher",1000);
+	MirMarkerPublisher = n.advertise<visualization_msgs::Marker>("MirMarkerPublisher",1000);
+	InterMarkerPublisher = n.advertise<visualization_msgs::Marker>("InterMarkerPublisher",1000);
+
 	ros::Publisher NucleoPublisher = n.advertise<std_msgs::Int16>("Pantograph_cmd",1000);
 	ros::Subscriber NucleoSubscriber = n.subscribe("Pantograph_res",1000,NucleoCallback);
 	ros::Subscriber MirOdomSubscriber = n.subscribe("amcl_pose",1000,UpdateMirPose); //amcl_pose
@@ -124,6 +206,8 @@ int main(int argc, char** argv) {
 	ROS_WARN("MIR POSITION TAKEN FROM /amcl_pose !!!!");
 
 	InitGoalMarker();
+	InitMirMarker();
+	InitInterMarker();
 
 	//Inizializzo le callback con gli argomenti utilizzati
 	//La funzione initCallback salva, nelle istanze delle classi, i puntatori:
