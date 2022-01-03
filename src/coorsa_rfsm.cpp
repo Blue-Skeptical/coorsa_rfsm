@@ -20,13 +20,15 @@ bool eventArrived(coorsa_rfsm::fsm_event::Request &req , coorsa_rfsm::fsm_event:
 	return true;
 }
 // CALLBACK che updata la posizione del MiR
+
 void UpdateMirPose(geometry_msgs::PoseWithCovarianceStamped odom){
 	MirPose = odom.pose.pose;
 }
 /*
 void UpdateMirPose(nav_msgs::Odometry odom){
 	MirPose = odom.pose.pose;
-}*/
+}
+*/
 
 //Initialize Marker
 void InitGoalMarker(){

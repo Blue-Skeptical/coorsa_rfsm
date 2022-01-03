@@ -252,12 +252,11 @@ class RequestBox : public rfsm::StateCallback{
 class MoveToDetectionPose : public rfsm::StateCallback{
   virtual void entry(){
     //Muovo la base alla posizione di detect
-    ////goal.target_pose.header.frame_id = "map";
-    //TODO
-    //Coordinate della posizione di detect
-    ////while(ac->getState()!= actionlib::SimpleClientGoalState::SUCCEEDED){
-		////	ros::spinOnce();
-		////}
+    pallet_database_pkg::pallet_info srv;
+    srv.request.box_type = 3;
+    if(ros::service::call("/pallet_database/get_pallet_info",srv)){
+      PerformPreciseApproach(srv.response.approaching_pose_1,ac);
+    }
     //Chiamo l'action server dell'UR per iniziare la detect
     rfsm->sendEvent("Success_E");
   }
@@ -331,16 +330,7 @@ class MoveToPickingPose : public rfsm::StateCallback{
     srv.request.box_type = 3;
     if(ros::service::call("/pallet_database/get_pallet_info",srv)){
       PerformPreciseApproach(srv.response.approaching_pose_1,ac);
-      PerformPreciseApproach(srv.response.approaching_pose_2,ac);
-      PerformPreciseApproach(srv.response.approaching_pose_1,ac);
-      PerformPreciseApproach(srv.response.approaching_pose_2,ac);
-      PerformPreciseApproach(srv.response.approaching_pose_1,ac);
-      PerformPreciseApproach(srv.response.approaching_pose_2,ac);
-//      deposito.target_pose.header.frame_id = "map";
-//      deposito.target_pose.header.stamp = ros::Time::now();
-//      deposito.target_pose.pose = srv.response.pallet.approaching_poses[0];
     }
-
   }
   public: void initCallback(MoveBaseClient* act, rfsm::StateMachine* fsm){
     rfsm = fsm;
@@ -468,7 +458,7 @@ void PerformPreciseApproach(geometry_msgs::Pose approaching_pose, MoveBaseClient
   //PORTA IL CENTRO SULLA RETTA PARALLELA AL LATO DEL Pallet
   ////Ruoto di 90° in senso orario il punto di approccio
 
-  geometry_msgs::Pose ap = GetShiftedPose(approaching_pose,-0.8);
+  geometry_msgs::Pose ap = GetShiftedPose(approaching_pose,-0.7);
   UpdateMarker("GOAL",approaching_pose);
   float theta = acos(ap.orientation.w)*2;
   theta += M_PI/2;
@@ -477,6 +467,7 @@ void PerformPreciseApproach(geometry_msgs::Pose approaching_pose, MoveBaseClient
   goal.target_pose.pose.position = ap.position;
   goal.target_pose.pose.orientation.w = cos(theta/2);
   goal.target_pose.pose.orientation.z = sin(theta/2);
+  goal.target_pose.pose = GetShiftedPose(goal.target_pose.pose,-0.1);
   ac->sendGoal(goal);
   while(ac->getState()!= actionlib::SimpleClientGoalState::SUCCEEDED){
     ros::spinOnce();
@@ -520,7 +511,7 @@ void PerformPreciseApproach(geometry_msgs::Pose approaching_pose, MoveBaseClient
   ros::spinOnce();
   ROS_INFO("Missing Distance: %f m",distance);
 
-  MoveMir(distance+0.02);
+  MoveMir(distance-0.02);
   //GIRATI DI 90° VERSO IL PALLET
   ros::spinOnce();
   ros::spinOnce();
@@ -536,7 +527,21 @@ void PerformPreciseApproach(geometry_msgs::Pose approaching_pose, MoveBaseClient
   if(mir_angle < 0) mir_angle = 2*M_PI + mir_angle;
 
   ROS_INFO("\nApp: %f \nMe: %f",Aapp,mir_angle);
-  RotateMir(Aapp - mir_angle);
+  RotateMir(ShortenTheAngleDistance(Aapp - mir_angle));
+
+  ros::spinOnce();
+  loop_rate.sleep();
+  ros::spinOnce();
+  loop_rate.sleep();
+  ros::spinOnce();
+  loop_rate.sleep();
+  ros::spinOnce();
+  loop_rate.sleep();
+  ros::spinOnce();
+  loop_rate.sleep();
+//  float distanceForApproachingPoint = sqrt(pow(approaching_pose.position.x - MirPose.position.x,2) + pow(approaching_pose.position.y - MirPose.position.y,2));
+//  ROS_INFO("_____\nDistance from approaching point: %f",distanceForApproachingPoint);
+/*  MoveMir(0.1);
 
   ros::spinOnce();
   loop_rate.sleep();
@@ -554,7 +559,7 @@ void PerformPreciseApproach(geometry_msgs::Pose approaching_pose, MoveBaseClient
   ROS_INFO("\n%f - %f = %f",Aapp,mir_angle, Aapp - mir_angle);
   ROS_INFO("\nNEW distance: %f\n", ShortenTheAngleDistance(Aapp - mir_angle));
   RotateMir(ShortenTheAngleDistance(Aapp - mir_angle));
-
+*/
   ros::spinOnce();
   loop_rate.sleep();
   ros::spinOnce();
@@ -567,7 +572,7 @@ void PerformPreciseApproach(geometry_msgs::Pose approaching_pose, MoveBaseClient
   loop_rate.sleep();
   float distanceForApproachingPoint = sqrt(pow(approaching_pose.position.x - MirPose.position.x,2) + pow(approaching_pose.position.y - MirPose.position.y,2));
   ROS_INFO("_____\nDistance from approaching point: %f",distanceForApproachingPoint);
-  MoveMir(distanceForApproachingPoint);
+  MoveMir(distanceForApproachingPoint + 0.6);
 
 
   //PROCEDI DRITTO FINO ALLA DISTANZA DESIDERATA

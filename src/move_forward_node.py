@@ -145,8 +145,8 @@ class MoveForwardServer:
     def move2goalConstSpeed(self, distance):
         """Moves the turtle to the goal."""
         # Please, insert a number slightly greater than 0 (e.g. 0.01).
-        velocity = max(distance/10,0.03) if (self.backward == 1) else min(distance/10,-0.03)
-        #velocity = 0.02 if(self.backward == 1) else -0.02
+        #velocity = max(distance/10,0.03) if (self.backward == 1) else min(distance/10,-0.03)
+        velocity = 0.12 if(self.backward == 1) else -0.12
         vel_msg = Twist()
         vel_msg.linear.x = velocity
         vel_msg.linear.y = 0
@@ -274,8 +274,8 @@ class MoveForwardServer:
         self.service = rospy.Service('/move_forward',move_forward,self.move_forward_handler)
         self.service = rospy.Service('/rotate_forward',move_forward,self.rotate_forward_handler)
 
-        #self.odom_subscriber = rospy.Subscriber(odom_topic,Odometry,self.update_pose)
-        self.odom_subscriber = rospy.Subscriber("/amcl_pose",GeomPoseCov,self.update_pose) # /odom_comb or /odom_enc
+        self.odom_subscriber = rospy.Subscriber(odom_topic,Odometry,self.update_pose)
+        #self.odom_subscriber = rospy.Subscriber("/amcl_pose",GeomPoseCov,self.update_pose) # /odom_comb or /odom_enc
         #self.odom_subscriber = rospy.Subscriber("/robot_pose",GeomPose,self.update_geom_pose)
         self.pose = Pose()
         self.odom = Odometry()
